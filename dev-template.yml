@@ -30,7 +30,7 @@ objects:
       sourceStrategy:
         from:
           kind: ImageStreamTag
-          name: ${BUILDER_IMAGE}
+          name: ${BUILDER_IMAGE}:${BUILDER_IMAGE_VERSION}
           namespace: ${BUILDER_IMAGE_NAMESPACE}
       type: Source
     successfulBuildsHistoryLimit: 5
@@ -65,23 +65,24 @@ objects:
     strategy:
       jenkinsPipelineStrategy:
         jenkinsfile: |-
+          // define commands
+          def mvnCmd = "mvn -s configuration/settings.xml"
+          def inputRootUrl = "https://jenkins-${ENV_NAME}.${APP_DNS}/job/dev-${APP_NAME}-pipeline/"
+
+          def notifySlack(text, channel, attachments) {
+              def slackURL = '${SLACK_WEBHOOK_URL}'
+              def jenkinsIcon = 'https://wiki.jenkins-ci.org/download/attachments/2916393/logo.png'
+              def slackChannel = '${SLACK_CHANNEL}'
+              def payload = JsonOutput.toJson([text: text,
+                  channel: channel,
+                  username: "openshift",
+                  icon_url: jenkinsIcon,
+                  attachments: attachments
+              ])
+              sh "curl -X POST --data-urlencode \'payload=${payload}\' ${slackURL}"
+          }
           node('maven') {
-            // define commands
-            def mvnCmd = "mvn -s configuration/settings.xml"
-            def inputRootUrl = "https://${APP_DNS}/job/dev-${APP_NAME}-pipeline/"
 
-            def notifySlack(text, channel, attachments) {
-                def slackURL = '${SLACK_WEBHOOK_URL}'
-                def jenkinsIcon = 'https://wiki.jenkins-ci.org/download/attachments/2916393/logo.png'
-
-                def payload = JsonOutput.toJson([text: text,
-                    channel: channel,
-                    username: "openshift",
-                    icon_url: jenkinsIcon,
-                    attachments: attachments
-                ])
-                sh "curl -X POST --data-urlencode \'payload=${payload}\' ${slackURL}"
-            }
             stage ('Build') {
               git branch: '${SOURCE_BRANCH}', url: '${SOURCE_REPOSITORY}'
               sh "${mvnCmd} clean install -DskipTests=true"
@@ -100,22 +101,25 @@ objects:
              sh "${mvnCmd} deploy -DskipTests=true"
             }
 
-            stage ('Deploy DEV') {
+            stage ('Deploy ${ENV_NAME}') {
               sh "rm -rf oc-build && mkdir -p oc-build/deployments"
               sh "cp target/*.war oc-build/deployments/ROOT.war"
               // create build. override the exit code since it complains about exising imagestream
               sh "oc start-build ${APP_NAME} --from-dir=oc-build --wait=true"
               def v = version()
               sh "oc tag ${APP_NAME}:latest ${APP_NAME}:${v}"
+              notifySlack("[${APP_NAME}] - New build deployed to ${ENV_NAME}!", '${SLACK_CHANNEL}', [])
             }
 
             stage ('Deploy TEST') {
+              notifySlack("[${APP_NAME}] - Build waiting approval for promotion to next environment. <"+inputRootUrl+env.BUILD_NUMBER+"/input|Approve>", 'jenkinsbuilds', [])
               timeout(time:15, unit:'MINUTES') {
-                 input message: "Promote to TEST?", ok: "Promote"
+                 input message: "Promote image to next environment?", ok: "Promote"
               }
               def v = version()
               // tag for stage
-              sh "oc tag ${APP_NAME}:latest ${APP_NAME}:totest"
+              sh "oc tag ${APP_NAME}:latest ${APP_NAME}:${PROMOTE_TAG}"
+              notifySlack("[${APP_NAME}] - New build tagged for next environment.", 'jenkinsbuilds', [])
             }
 
           }
@@ -258,6 +262,16 @@ parameters:
   displayName: Service name
   name: APP_NAME
   required: true
+- description: Environment name / project name
+  displayName: Environment name
+  name: ENV_NAME
+  required: true
+  value: dev
+- description: Container image tag that is used to promote image to next environment like TEST
+  displayName: Promote tag
+  name: PROMOTE_TAG
+  required: true
+  value: totest
 - description: Builder image for this application
   displayName: Builder image
   name: BUILDER_IMAGE
@@ -267,6 +281,11 @@ parameters:
   name: BUILDER_IMAGE_NAMESPACE
   required: true
   value: openshift
+- description: Builder image version
+  displayName: Builder image version
+  name: BUILDER_IMAGE_VERSION
+  required: true
+  value: latest
 - description: Source code branch to use
   displayName: Branch
   name: SOURCE_BRANCH
@@ -284,6 +303,9 @@ parameters:
 - description: URL for slack webhook
   displayName: Slack webhook
   name: SLACK_WEBHOOK_URL
+- description: Channel for Slack notifications
+  displayName: Slack channel
+  name: SLACK_CHANNEL
 - description: Wildcard DNS for apps
   displayName: Wildcard DNS
   name: APP_DNS
