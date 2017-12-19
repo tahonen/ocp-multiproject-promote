@@ -33,18 +33,18 @@ If you dont have write access to openshift project just leave '-n openshift' out
 Open Product Catalog in Openshift and search for work 'dev'. You should see dev-environment in the search results. Click that and populate fields in the form
 
 Here is sample sample values that you can use.
-Service name: product-catalog
-Enviroment name: dev
-Promote tag: totest
-Builder image: redhat-openjdk18-openshift
-Builder image namespace: openshift
-Buidler image version: latest
-Branch: master
-Repository address: https://github.com/tahonen/product-catalog.git
-Slack webhook: Add your own 
-Slack channek: Add your own
-Wildcard DNS: Something like apps.example.com...
-Sonarqube URL: URL to sonarqube http://sonarqube.pla.pla or OCP internal address http://sonarqube.internal-project.svc:9000
+* Service name: product-catalog
+* Enviroment name: dev
+* Promote tag: totest
+* Builder image: redhat-openjdk18-openshift
+* Builder image namespace: openshift
+* Buidler image version: latest
+* Branch: master
+* Repository address: https://github.com/tahonen/product-catalog.git
+* Slack webhook: Add your own 
+* Slack channek: Add your own
+* Wildcard DNS: Something like apps.example.com...
+* Sonarqube URL: URL to sonarqube http://sonarqube.pla.pla or OCP internal address http://sonarqube.internal-project.svc:9000
 
 ## Up next
 
