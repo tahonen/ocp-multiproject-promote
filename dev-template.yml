@@ -86,6 +86,7 @@ objects:
               git branch: '${SOURCE_BRANCH}', url: '${SOURCE_REPOSITORY}'
               sh "${mvnCmd} clean install -DskipTests=true"
             }
+
             stage ('Test') {
               sh "${mvnCmd} test"
               step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
@@ -94,9 +95,11 @@ objects:
             stage ('Analysis (Security, Bugs, etc)') {
               sh "${mvnCmd} sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -DskipTests=true"
             }
+
             stage ('Push to Nexus') {
              sh "${mvnCmd} deploy -DskipTests=true"
             }
+
             stage ('Deploy DEV') {
               sh "rm -rf oc-build && mkdir -p oc-build/deployments"
               sh "cp target/*.war oc-build/deployments/ROOT.war"
@@ -105,6 +108,7 @@ objects:
               def v = version()
               sh "oc tag ${APP_NAME}:latest ${APP_NAME}:${v}"
             }
+
             stage ('Deploy TEST') {
               timeout(time:15, unit:'MINUTES') {
                  input message: "Promote to TEST?", ok: "Promote"
