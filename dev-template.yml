@@ -67,7 +67,7 @@ objects:
         jenkinsfile: |-
           // define commands
           def mvnCmd = "mvn -s configuration/settings.xml"
-          def inputRootUrl = "https://jenkins-${ENV_NAME}.${APP_DNS}/job/dev-${APP_NAME}-pipeline/"
+          def inputRootUrl = "https://jenkins-${ENV_NAME}.${APP_DNS}/job/${ENV_NAME}-dev-${APP_NAME}-pipeline/"
 
           def notifySlack(text, channel, attachments) {
               def slackURL = '${SLACK_WEBHOOK_URL}'
@@ -97,13 +97,13 @@ objects:
               sh "${mvnCmd} sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -DskipTests=true"
             }
 
-            stage ('Push to Nexus') {
-             sh "${mvnCmd} deploy -DskipTests=true"
+            stage ('Push to Nexus - skipping') {
+             //sh "${mvnCmd} deploy -DskipTests=true"
             }
 
             stage ('Deploy ${ENV_NAME}') {
               sh "rm -rf oc-build && mkdir -p oc-build/deployments"
-              sh "cp target/*.war oc-build/deployments/ROOT.war"
+              sh "cp target/*.*ar oc-build/deployments/"
               // create build. override the exit code since it complains about exising imagestream
               sh "oc start-build ${APP_NAME} --from-dir=oc-build --wait=true"
               def v = version()
