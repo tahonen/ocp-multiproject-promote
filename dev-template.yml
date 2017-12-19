@@ -81,7 +81,7 @@ objects:
                     attachments: attachments
                 ])
                 sh "curl -X POST --data-urlencode \'payload=${payload}\' ${slackURL}"
-}
+            }
             stage ('Build') {
               git branch: '${SOURCE_BRANCH}', url: '${SOURCE_REPOSITORY}'
               sh "${mvnCmd} clean install -DskipTests=true"
@@ -90,7 +90,7 @@ objects:
               sh "${mvnCmd} test"
               step([$class: 'JUnitResultArchiver', testResults: '**/target/surefire-reports/TEST-*.xml'])
             }
-            
+
             stage ('Analysis (Security, Bugs, etc)') {
               sh "${mvnCmd} sonar:sonar -Dsonar.host.url=${SONARQUBE_URL} -DskipTests=true"
             }
@@ -113,8 +113,8 @@ objects:
               // tag for stage
               sh "oc tag ${APP_NAME}:latest ${APP_NAME}:totest"
             }
-  
-          }  
+
+          }
           def version() {
             def matcher = readFile('pom.xml') =~ '<version>(.+)</version>'
             matcher ? matcher[0][1] : null
@@ -248,7 +248,7 @@ objects:
     name: ${APP_NAME}
   spec:
     lookupPolicy:
-      local: false   
+      local: false
 parameters:
 - description: Application/Service name
   displayName: Service name
