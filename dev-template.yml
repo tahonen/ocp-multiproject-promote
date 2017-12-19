@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Template
 metadata:
   creationTimestamp: null
-  name: dev-enviroment
+  name: dev-environment
 objects:
 - apiVersion: v1
   kind: BuildConfig
